@@ -67,7 +67,6 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="App_Config\Include\zzz\Sitecore.Support.95551.config" />
     <Content Include="sitecore\shell\client\Business Component Library\Layouts\Renderings\Forms\Uploader\Uploader.js" />
   </ItemGroup>
   <ItemGroup>
