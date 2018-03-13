@@ -225,6 +225,15 @@ define(["sitecore", "jqueryui", "fileUpload", "iFrameTransport"], function (_sc,
             }
 
             this.$el.find(".sc-uploader-fileupload").attr("data-url", this.url);
+
+            // Fix 95551. Added code. Begin
+            _.each(this.datas,
+                function (file) {
+                    file.url = this.url;
+                },
+                this
+            );
+            // Fix 95551. Added code. End
         },
 
         getUploadedSize: function () {

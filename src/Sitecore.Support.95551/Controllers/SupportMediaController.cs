@@ -14,6 +14,7 @@
     using System.Collections.Generic;
     using System.Drawing;
     using System.IO;
+    using System.Net;
     using System.Web;
     using System.Web.Mvc;
 
@@ -28,68 +29,78 @@
             }
             List<UploadedFileItem> list = new List<UploadedFileItem>();
             SitecoreViewModelResult result = new SitecoreViewModelResult();
-            if (ValidateDestination(database, destinationUrl, result))
+
+            #region Addded code
+            if (!ValidateDestination(database, destinationUrl, result))
             {
-                foreach (string str in base.Request.Files)
-                {
-                    HttpPostedFileBase file = base.Request.Files[str];
-                    if (file != null)
-                    {
-                        string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(file.FileName);
-                        if (!string.IsNullOrEmpty(base.Request.Form["name"]))
-                        {
-                            fileNameWithoutExtension = base.Request.Form["name"];
-                        }
-                        fileNameWithoutExtension = ItemUtil.ProposeValidItemName(fileNameWithoutExtension, "default");
-                        string str3 = string.Empty;
-                        if (!string.IsNullOrEmpty(base.Request.Form["alternate"]))
-                        {
-                            str3 = base.Request.Form["alternate"];
-                        }
-                        Database contentDatabase = Context.ContentDatabase;
-                        if (!string.IsNullOrEmpty(database))
-                        {
-                            contentDatabase = Factory.GetDatabase(database);
-                        }
-                        if (contentDatabase == null)
-                        {
-                            contentDatabase = Context.ContentDatabase;
-                        }
-                        MediaCreatorOptions options = new MediaCreatorOptions
-                        {
-                            AlternateText = str3,
-                            Database = contentDatabase,
-                            FileBased = Settings.Media.UploadAsFiles,
-                            IncludeExtensionInItemName = Settings.Media.IncludeExtensionsInItemNames,
-                            KeepExisting = true,
-                            Language = LanguageManager.DefaultLanguage,
-                            Versioned = Settings.Media.UploadAsVersionableByDefault,
-                            Destination = this.ParseDestinationUrl(destinationUrl) + fileNameWithoutExtension
-                        };
-                        if (!ValidateFile(file, result))
-                        {
-                            return result;
-                        }
-                        Item innerItem = MediaManager.Creator.CreateFromStream(file.InputStream, "/upload/" + file.FileName, options);
-                        if (!string.IsNullOrEmpty(base.Request.Form["description"]))
-                        {
-                            innerItem.Editing.BeginEdit();
-                            innerItem["Description"] = base.Request.Form["description"];
-                            innerItem.Editing.EndEdit();
-                        }
-                        MediaItem item = new MediaItem(innerItem);
-                        MediaUrlOptions options2 = new MediaUrlOptions(130, 130, false)
-                        {
-                            Thumbnail = true,
-                            BackgroundColor = Color.Transparent,
-                            Database = item.Database
-                        };
-                        string mediaUrl = MediaManager.GetMediaUrl(item, options2);
-                        list.Add(new UploadedFileItem(innerItem.Name, innerItem.ID.ToString(), innerItem.ID.ToShortID().ToString(), mediaUrl));
-                    }
-                }
-                ((dynamic)result.Result).uploadedFileItems = list;
+                this.Response.StatusCode = new HttpStatusCodeResult(HttpStatusCode.Forbidden).StatusCode;                
+                this.Response.StatusDescription = result.Result.errorItems[0].Message;
+                this.Response.TrySkipIisCustomErrors = true;
+                return result;
             }
+            #endregion
+
+            foreach (string str in base.Request.Files)
+            {
+                HttpPostedFileBase file = base.Request.Files[str];
+                if (file != null)
+                {
+                    string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(file.FileName);
+                    if (!string.IsNullOrEmpty(base.Request.Form["name"]))
+                    {
+                        fileNameWithoutExtension = base.Request.Form["name"];
+                    }
+                    fileNameWithoutExtension = ItemUtil.ProposeValidItemName(fileNameWithoutExtension, "default");
+                    string str3 = string.Empty;
+                    if (!string.IsNullOrEmpty(base.Request.Form["alternate"]))
+                    {
+                        str3 = base.Request.Form["alternate"];
+                    }
+                    Database contentDatabase = Context.ContentDatabase;
+                    if (!string.IsNullOrEmpty(database))
+                    {
+                        contentDatabase = Factory.GetDatabase(database);
+                    }
+                    if (contentDatabase == null)
+                    {
+                        contentDatabase = Context.ContentDatabase;
+                    }
+                    MediaCreatorOptions options = new MediaCreatorOptions
+                    {
+                        AlternateText = str3,
+                        Database = contentDatabase,
+                        FileBased = Settings.Media.UploadAsFiles,
+                        IncludeExtensionInItemName = Settings.Media.IncludeExtensionsInItemNames,
+                        KeepExisting = true,
+                        Language = LanguageManager.DefaultLanguage,
+                        Versioned = Settings.Media.UploadAsVersionableByDefault,
+                        Destination = this.ParseDestinationUrl(destinationUrl) + fileNameWithoutExtension
+                    };
+                    if (!ValidateFile(file, result))
+                    {
+                        return result;
+                    }
+                    Item innerItem = MediaManager.Creator.CreateFromStream(file.InputStream, "/upload/" + file.FileName, options);
+                    if (!string.IsNullOrEmpty(base.Request.Form["description"]))
+                    {
+                        innerItem.Editing.BeginEdit();
+                        innerItem["Description"] = base.Request.Form["description"];
+                        innerItem.Editing.EndEdit();
+                    }
+                    MediaItem item = new MediaItem(innerItem);
+                    MediaUrlOptions options2 = new MediaUrlOptions(130, 130, false)
+                    {
+                        Thumbnail = true,
+                        BackgroundColor = Color.Transparent,
+                        Database = item.Database
+                    };
+                    string mediaUrl = MediaManager.GetMediaUrl(item, options2);
+                    list.Add(new UploadedFileItem(innerItem.Name, innerItem.ID.ToString(), innerItem.ID.ToShortID().ToString(), mediaUrl));
+                }
+            }
+            
+            ((dynamic)result.Result).uploadedFileItems = list;
+
             return result;
         }
 
